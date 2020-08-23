@@ -1,0 +1,9 @@
+{
+  "functions": {
+    "predeploy": "yarn build:functions",
+    "source": "dist/apps/functions"
+  },
+  "firestore": {
+    "rules": "packages/firestore/firestore.rules"
+  }
+}
