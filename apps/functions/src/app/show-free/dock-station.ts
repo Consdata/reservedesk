@@ -1,3 +1,3 @@
 export enum DockStation {
-  old, new, unknown
+  old = '(old dock)', new = '(new dock)', unknown = '(unknown dock)'
 }

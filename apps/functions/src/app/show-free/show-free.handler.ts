@@ -6,10 +6,7 @@ async function sendSlackMessage(slackHttpHeaders: { Authorization: string; 'Cont
   await nodeFetch(`https://slack.com/api/chat.postMessage`, {
     method: 'POST',
     headers: slackHttpHeaders,
-    body: JSON.stringify({
-      channel: channel,
-      text: message
-    })
+    body: message
   });
 }
 
@@ -158,18 +155,70 @@ const roomsDefinitions = [
   }
 ];
 
-function createMessage(reservedDesksInRooms: Map<string, string[]>) {
-  let message = '';
-  roomsDefinitions.forEach((room) => {
-    message += room.name + ':';
-    room.desks.forEach(desk => {
-      if (reservedDesksInRooms.get(room.name) == undefined || !reservedDesksInRooms.get(room.name).includes(desk)) {
-        message += ' ' + desk + ',';
-      }
-    });
-    message += '\n';
+function createMessage(reservedDesksInRooms: Map<string, any[]>, channel: string) {
+  const deskReserved = (roomName: string, deskName: string): boolean =>
+    reservedDesksInRooms.get(roomName) != undefined && reservedDesksInRooms.get(roomName).map((value) => {
+      console.log('value.desk:',value.desk);
+      return value.desk;
+    }).includes(deskName);
+
+  let blocks = [];
+  blocks.push({
+    type: 'section',
+    text: {
+      type: 'plain_text',
+      text: 'Please select one desk:'
+    }
   });
-  return message;
+  blocks = blocks.concat(...(roomsDefinitions.map((def) => {
+    const elements = def.desks.map((desk) => ({
+      type: 'button',
+      text: {
+        type: 'plain_text',
+        text: desk.name + ' ' + desk.dockStation
+      },
+      style: deskReserved(def.name, desk.name) ? 'danger' : 'primary',
+      value: def.name + '_' + desk.name
+    }));
+    const roomsBlocks = [];
+    roomsBlocks.push({
+        type: 'divider'
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: '<' + def.wikiLink + '|' + def.name + '>'
+        }
+      },
+      {
+        type: 'actions',
+        elements: elements
+      }
+    );
+    if (reservedDesksInRooms.get(def.name) != undefined) {
+      reservedDesksInRooms.get(def.name).forEach((value) => roomsBlocks.push(
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'image',
+              image_url: 'https://api.slack.com/img/blocks/bkb_template_images/notificationsWarningIcon.png',
+              'alt_text': 'notifications warning icon'
+            },
+            {
+              type: 'mrkdwn',
+              text: value.desk + ' reserved by @' + value.user
+            }]
+        }
+      ));
+    }
+    return roomsBlocks;
+  })));
+  return {
+    channel: `@${channel}`,
+    blocks: blocks
+  };
 }
 
 export const showFreeFactory = (
@@ -193,14 +242,20 @@ export const showFreeFactory = (
         .orderBy('room')
         .orderBy('desk')
         .get();
-      const reservedDesksInRooms = new Map<string, string[]>();
+      const reservedDesksInRooms = new Map<string, any[]>();
       reserved.forEach(r => {
+        console.log('reserver:', r);
         if (reservedDesksInRooms.get(r.data().room) == undefined) {
           reservedDesksInRooms.set(r.data().room, []);
         }
-        reservedDesksInRooms.get(r.data().room).push(r.data().desk);
+        reservedDesksInRooms.get(r.data().room).push(
+          {
+            desk: r.data().desk,
+            user: r.data().userName
+          });
       });
-      const message = createMessage(reservedDesksInRooms);
-      await sendSlackMessage(slackHttpHeaders, `@${payload.userName}`, 'Free desks on ' + payload.date + ':\n' + message);
+      const message = createMessage(reservedDesksInRooms, payload.userName);
+      console.log('message:', message);
+      await sendSlackMessage(slackHttpHeaders, `@${payload.userName}`, JSON.stringify(message));
     });
 };
