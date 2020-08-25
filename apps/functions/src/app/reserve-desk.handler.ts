@@ -10,9 +10,9 @@ function formatDate(date: Date): string {
 function convertDate(dateFromCommand: string): string {
   switch (dateFromCommand) {
     case 'today':
-      return formatDate(new Date());
+      return formatDate(new Date(new Date().getTime() + 7200000));
     case 'tomorrow':
-      return formatDate(new Date(new Date().getTime() + 86400000));
+      return formatDate(new Date(new Date().getTime() + 86400000 + 7200000));
     default:
       return dateFromCommand;
   }
@@ -20,17 +20,14 @@ function convertDate(dateFromCommand: string): string {
 
 function createPubSubMessage(commands: string[], userName: string): ReserveDeskMessage {
   return {
-    command: Command[commands[1]],
-    date: convertDate(commands[2]),
-    room: commands[4],
-    desk: commands[5],
+    command: commands[2] != undefined ? Command.cancel : Command.showfree,
+    date: convertDate(commands[3]),
     userName: userName
   }
 }
 
 const commandMapper = new Map([
   [Command.showfree, 'reserve-desk-showfree'],
-  [Command.reserve, 'reserve-desk-reserve'],
   [Command.cancel, 'reserve-desk-cancel']
 ]);
 
@@ -51,7 +48,7 @@ export const reserveDeskFactory = (
   }
 
   const slashCommand: SlashCommandRequest = request.body;
-  const commands = slashCommand.text.match(/(showfree|reserve|cancel)\s(today|tomorrow|\d{4}-\d{2}-\d{2})(\s(\S*)\s(\S*))?/);
+  const commands = slashCommand.text.match(/((cancel)\s)?(today|tomorrow|\d{4}-\d{2}-\d{2})/);
   if (commands) {
     const message = createPubSubMessage(commands, slashCommand.user_name);
     await pubsub.topic(commandMapper.get(message.command)).publish(Buffer.from(JSON.stringify(message)));
@@ -67,7 +64,7 @@ export const reserveDeskFactory = (
               'type': 'section',
               'text': {
                 'type': 'mrkdwn',
-                'text': 'Please use /rd _command_ _date_ _room_ _desk_, where:\n- command is one of: "showfree", "reserve", "cancel"\n- date is "today", "tomorrow" or date in format yyyy-MM-dd\n- room is one of: "sharki", "piranie", "lemury", "komando", "orki", "magicy", "osy"\n- desk is a name of a desk'
+                'text': 'Please use */rd _date_* where _date_ is "today", "tomorrow" or date in format yyyy-MM-dd to see and reserve desk for selected day\nor */rd cancel _date_* to cancel your reservation for selected day.'
               }
             }]
         }

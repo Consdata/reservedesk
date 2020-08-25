@@ -12,6 +12,10 @@ async function sendSlackMessage(slackHttpHeaders: { Authorization: string; 'Cont
   });
 }
 
+function createSuccessMessage(messageData: ReserveDeskMessage): string {
+  return `Desk ${messageData.desk} in room ${messageData.room} is reserved for You on ${messageData.date}!`;
+}
+
 export const reserveFactory = (
   functions: import('firebase-functions').FunctionBuilder,
   config: import('firebase-functions').config.Config,
@@ -46,10 +50,13 @@ export const reserveFactory = (
           }
         });
         if (result) {
-          await sendSlackMessage(slackHttpHeaders, `@${payload.userName}`, 'Desk reserved for You!');
+          await sendSlackMessage(slackHttpHeaders, `@${payload.userName}`, createSuccessMessage(payload));
         }
       } else {
-        await sendSlackMessage(slackHttpHeaders, `@${payload.userName}`, 'The desk is already reserved!');
+        await sendSlackMessage(
+          slackHttpHeaders,
+          `@${payload.userName}`,
+          `The desk is already reserved by @${reserved.data().userName}!`);
       }
     });
 };

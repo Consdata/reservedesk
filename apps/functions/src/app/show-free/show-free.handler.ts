@@ -155,7 +155,7 @@ const roomsDefinitions = [
   }
 ];
 
-function createMessage(reservedDesksInRooms: Map<string, any[]>, channel: string) {
+function createMessage(reservedDesksInRooms: Map<string, any[]>, channel: string, date: string) {
   const deskReserved = (roomName: string, deskName: string): boolean =>
     reservedDesksInRooms.get(roomName) != undefined && reservedDesksInRooms.get(roomName).map((value) => {
       console.log('value.desk:',value.desk);
@@ -166,8 +166,8 @@ function createMessage(reservedDesksInRooms: Map<string, any[]>, channel: string
   blocks.push({
     type: 'section',
     text: {
-      type: 'plain_text',
-      text: 'Please select one desk:'
+      type: 'mrkdwn',
+      text: `Please select one desk for *${date}*:`
     }
   });
   blocks = blocks.concat(...(roomsDefinitions.map((def) => {
@@ -178,7 +178,7 @@ function createMessage(reservedDesksInRooms: Map<string, any[]>, channel: string
         text: desk.name + ' ' + desk.dockStation
       },
       style: deskReserved(def.name, desk.name) ? 'danger' : 'primary',
-      value: def.name + '_' + desk.name
+      value: date + '_' + def.name + '_' + desk.name
     }));
     const roomsBlocks = [];
     roomsBlocks.push({
@@ -188,7 +188,7 @@ function createMessage(reservedDesksInRooms: Map<string, any[]>, channel: string
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: '<' + def.wikiLink + '|' + def.name + '>'
+          text: '*<' + def.wikiLink + '|' + def.name + '>*'
         }
       },
       {
@@ -244,7 +244,6 @@ export const showFreeFactory = (
         .get();
       const reservedDesksInRooms = new Map<string, any[]>();
       reserved.forEach(r => {
-        console.log('reserver:', r);
         if (reservedDesksInRooms.get(r.data().room) == undefined) {
           reservedDesksInRooms.set(r.data().room, []);
         }
@@ -254,8 +253,7 @@ export const showFreeFactory = (
             user: r.data().userName
           });
       });
-      const message = createMessage(reservedDesksInRooms, payload.userName);
-      console.log('message:', message);
+      const message = createMessage(reservedDesksInRooms, payload.userName, payload.date);
       await sendSlackMessage(slackHttpHeaders, `@${payload.userName}`, JSON.stringify(message));
     });
 };
