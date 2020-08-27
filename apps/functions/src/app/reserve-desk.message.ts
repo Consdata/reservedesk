@@ -6,4 +6,5 @@ export interface ReserveDeskMessage {
   room?: string;
   desk?: string;
   userName: string;
+  responseUrl: string;
 }

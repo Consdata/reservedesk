@@ -18,11 +18,12 @@ function convertDate(dateFromCommand: string): string {
   }
 }
 
-function createPubSubMessage(commands: string[], userName: string): ReserveDeskMessage {
+function createPubSubMessage(commands: string[], userName: string, responseUrl: string): ReserveDeskMessage {
   return {
     command: commands[2] != undefined ? Command.cancel : Command.showfree,
     date: convertDate(commands[3]),
-    userName: userName
+    userName: userName,
+    responseUrl: responseUrl
   }
 }
 
@@ -48,9 +49,10 @@ export const reserveDeskFactory = (
   }
 
   const slashCommand: SlashCommandRequest = request.body;
+  console.log('slashCommand:', slashCommand);
   const commands = slashCommand.text.match(/((cancel)\s)?(today|tomorrow|\d{4}-\d{2}-\d{2})/);
   if (commands) {
-    const message = createPubSubMessage(commands, slashCommand.user_name);
+    const message = createPubSubMessage(commands, slashCommand.user_name, slashCommand.response_url);
     await pubsub.topic(commandMapper.get(message.command)).publish(Buffer.from(JSON.stringify(message)));
 
     response.status(200).send();

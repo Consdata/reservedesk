@@ -8,10 +8,11 @@ function createPubSubMessage(interactionRequest: ReserveInteractionRequest): Res
   console.log('actionValue:', actionValue);
   return {
     command: Command.reserve,
-    date: actionValue.substr(0,10),
+    date: actionValue.substr(0, 10),
     room: actionValue.substring(11, actionValue.lastIndexOf('_')),
     desk: actionValue.substr(actionValue.lastIndexOf('_') + 1),
-    userName: interactionRequest.user.username
+    userName: interactionRequest.user.username,
+    responseUrl: interactionRequest.response_url
   }
 }
 
@@ -34,8 +35,8 @@ export const reserveInteractionFactory = (
   console.log('request:', request.body.payload);
   const interactionRequest: ReserveInteractionRequest = JSON.parse(request.body.payload);
 
-    const message = createPubSubMessage(interactionRequest);
-    await pubsub.topic('reserve-desk-reserve').publish(Buffer.from(JSON.stringify(message)));
+  const message = createPubSubMessage(interactionRequest);
+  await pubsub.topic('reserve-desk-reserve').publish(Buffer.from(JSON.stringify(message)));
 
-    response.status(200).send();
+  response.status(200).send();
 });

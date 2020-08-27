@@ -1,16 +1,5 @@
 import {ReserveDeskMessage} from '../reserve-desk.message';
-import * as nodeFetch from 'node-fetch';
-
-async function sendSlackMessage(slackHttpHeaders: { Authorization: string; 'Content-type': string }, channel: string, message: string) {
-  await nodeFetch(`https://slack.com/api/chat.postMessage`, {
-    method: 'POST',
-    headers: slackHttpHeaders,
-    body: JSON.stringify({
-      channel: channel,
-      text: message
-    })
-  });
-}
+import {sendSlackMessage} from '../slack/send-slack-message';
 
 export const cancelFactory = (
   functions: import('firebase-functions').FunctionBuilder,
@@ -38,7 +27,7 @@ export const cancelFactory = (
 
       await sendSlackMessage(
         slackHttpHeaders,
-        `@${payload.userName}`,
+        payload.responseUrl,
         `Your reservations for ${payload.date} have been canceled!`);
     }
   );

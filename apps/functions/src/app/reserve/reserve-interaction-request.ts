@@ -1,11 +1,12 @@
 export interface ReserveInteractionRequest {
   type: 'block_actions';
   user: {
-    username: string
-  }
+    username: string;
+  };
+  response_url: string;
   actions: [
     {
-      value: string
+      value: string;
     }
-  ]
+  ];
 }

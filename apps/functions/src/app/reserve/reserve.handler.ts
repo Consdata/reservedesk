@@ -1,16 +1,5 @@
 import {ReserveDeskMessage} from '../reserve-desk.message';
-import * as nodeFetch from 'node-fetch';
-
-async function sendSlackMessage(slackHttpHeaders: { Authorization: string; 'Content-type': string }, channel: string, message: string) {
-  await nodeFetch(`https://slack.com/api/chat.postMessage`, {
-    method: 'POST',
-    headers: slackHttpHeaders,
-    body: JSON.stringify({
-      channel: channel,
-      text: message
-    })
-  });
-}
+import {sendSlackMessage} from '../slack/send-slack-message';
 
 function createSuccessMessage(messageData: ReserveDeskMessage): string {
   return `Desk ${messageData.desk} in room ${messageData.room} is reserved for You on ${messageData.date}!`;
@@ -50,12 +39,12 @@ export const reserveFactory = (
           }
         });
         if (result) {
-          await sendSlackMessage(slackHttpHeaders, `@${payload.userName}`, createSuccessMessage(payload));
+          await sendSlackMessage(slackHttpHeaders, payload.responseUrl, createSuccessMessage(payload));
         }
       } else {
         await sendSlackMessage(
           slackHttpHeaders,
-          `@${payload.userName}`,
+          payload.responseUrl,
           `The desk is already reserved by @${reserved.data().userName}!`);
       }
     });
