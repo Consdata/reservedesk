@@ -29,7 +29,9 @@ export const reserveInteractionFactory = (
     request.headers['x-slack-request-timestamp'],
     request.rawBody.toString()
   )) {
+    console.error('Invalid slack signing');
     response.status(401).send('Invalid slack signing');
+    return;
   }
 
   console.log('request:', request.body.payload);
