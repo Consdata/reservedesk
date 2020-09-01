@@ -1,5 +1,5 @@
 {
   "projects": {
-    "default": "testjw"
+    "test": "reservedesk-test"
   }
 }

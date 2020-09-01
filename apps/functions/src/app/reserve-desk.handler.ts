@@ -1,10 +1,12 @@
 import {checkSlackSignature} from './slack/check-slack-signature';
 import {SlashCommandRequest} from './slack/slash-command-request';
-import {ReserveDeskMessage} from './reserve-desk.message';
 import {Command} from './command';
+import {createDesksViewMessage} from './show-free/desks-view-message.creator';
+import * as nodeFetch from 'node-fetch';
+import {cancelReservations} from './cancel/cancel.handler';
 
 function formatDate(date: Date): string {
-  return date.toISOString().substr(0,10);
+  return date.toISOString().substr(0, 10);
 }
 
 function convertDate(dateFromCommand: string): string {
@@ -18,24 +20,30 @@ function convertDate(dateFromCommand: string): string {
   }
 }
 
-function createPubSubMessage(commands: string[], userName: string, responseUrl: string): ReserveDeskMessage {
-  return {
-    command: commands[2] != undefined ? Command.cancel : Command.showfree,
-    date: convertDate(commands[3]),
-    userName: userName,
-    responseUrl: responseUrl
-  }
+function getCommand(commands: string[]): Command {
+  console.log('commands:', commands);
+  return commands[2] != undefined ? Command.cancel : Command.showfree;
 }
 
-const commandMapper = new Map([
-  [Command.showfree, 'reserve-desk-showfree'],
-  [Command.cancel, 'reserve-desk-cancel']
-]);
+async function sendSlackMessage(slackHttpHeaders: { Authorization: string; 'Content-type': string },
+                                message: string) {
+  await nodeFetch('https://slack.com/api/views.open', {
+    method: 'POST',
+    headers: slackHttpHeaders,
+    body: message
+  });
+}
 
 export const reserveDeskFactory = (
   functions: import('firebase-functions').FunctionBuilder,
   config: import('firebase-functions').config.Config,
-  pubsub: import('@google-cloud/pubsub').PubSub) => functions.https.onRequest(async (request, response) => {
+  firebase: typeof import('firebase-admin')) => functions.https.onRequest(async (request, response) => {
+
+  const slackHttpHeaders = {
+    Authorization: `Bearer ${config.slack.bottoken}`,
+    'Content-type': 'application/json'
+  };
+
   if (request.method !== 'POST') {
     response.status(405).send('Invalid request method (only POST allowed)');
   }
@@ -49,12 +57,19 @@ export const reserveDeskFactory = (
   }
 
   const slashCommand: SlashCommandRequest = request.body;
-  console.log('slashCommand:', slashCommand);
   const commands = slashCommand.text.match(/((cancel)\s)?(today|tomorrow|\d{4}-\d{2}-\d{2})/);
   if (commands) {
-    const message = createPubSubMessage(commands, slashCommand.user_name, slashCommand.response_url);
-    await pubsub.topic(commandMapper.get(message.command)).publish(Buffer.from(JSON.stringify(message)));
-
+    switch (getCommand(commands)) {
+      case Command.showfree: {
+        const desksViewMessage = await createDesksViewMessage(firebase, slashCommand.user_name, convertDate(commands[3]), slashCommand.trigger_id);
+        await sendSlackMessage(slackHttpHeaders, JSON.stringify(desksViewMessage));
+        break;
+      }
+      case Command.cancel: {
+        await cancelReservations(firebase, config, slashCommand.user_name, convertDate(commands[3]), slashCommand.response_url);
+        break;
+      }
+    }
     response.status(200).send();
   } else {
     response.contentType('json')

@@ -3,6 +3,10 @@ export interface ReserveInteractionRequest {
   user: {
     username: string;
   };
+  trigger_id: string;
+  view: {
+    id: string;
+  }
   response_url: string;
   actions: [
     {
