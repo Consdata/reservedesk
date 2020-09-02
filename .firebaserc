@@ -1,5 +1,6 @@
 {
   "projects": {
-    "test": "reservedesk-test"
+    "test": "reservedesk-test",
+    "prod": "testjw"
   }
 }
