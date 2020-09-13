@@ -1,51 +1,57 @@
-import {ReserveDeskMessage} from '../reserve-desk.message';
-import {sendSlackMessage} from '../slack/send-slack-message';
+import {updateModalSlackMessage} from '../slack/send-slack-message';
+import {ReserveDesk} from '../reserve-desk';
+import * as admin from 'firebase-admin';
+import {createShowFreeRoomsMessage} from '../show-free/show-free-rooms-message.creator';
 
-function createSuccessMessage(messageData: ReserveDeskMessage): string {
-  return `Desk ${messageData.desk} in room ${messageData.room} is reserved for You on ${messageData.date}!`;
+function extractReserveDeskData(actionValue: string): ReserveDesk {
+  return {
+    date: actionValue.substr(0, 10),
+    room: actionValue.substring(11, actionValue.lastIndexOf('_')),
+    desk: actionValue.substr(actionValue.lastIndexOf('_') + 1)
+  }
 }
 
-export const reserveFactory = (
-  functions: import('firebase-functions').FunctionBuilder,
-  config: import('firebase-functions').config.Config,
-  firebase: typeof import('firebase-admin')) => {
-
-  const slackHttpHeaders = {
-    Authorization: `Bearer ${config.slack.bottoken}`,
-    'Content-type': 'application/json'
+export const reserveDesk = async (slackHttpHeaders,
+                                  firestore: admin.firestore.Firestore,
+                                  userName: string,
+                                  actionValue: string,
+                                  triggerId: string,
+                                  viewId: string) => {
+  const refreshView = async (date: string) => {
+    const desksViewMessage = await createShowFreeRoomsMessage(
+      firestore,
+      userName,
+      date,
+      triggerId,
+      viewId);
+    await updateModalSlackMessage(slackHttpHeaders, JSON.stringify(desksViewMessage));
   };
 
-  return functions.pubsub.topic('reserve-desk-reserve').onPublish(
-    async (topicMessage, context) => {
-      const payload: ReserveDeskMessage = JSON.parse(Buffer.from(topicMessage.data, 'base64').toString());
+  const reserveDeskData = extractReserveDeskData(actionValue);
 
-      const firestore = firebase.firestore();
-      const docId = payload.date.concat(payload.room).concat(payload.desk);
-      const reservationRef = firestore.collection('reservationDesk').doc(docId);
-      const reserved = await reservationRef.get();
-      if (!reserved.exists) {
-        const result = await firestore.runTransaction(async t => {
-          const reservation = await t.get(reservationRef);
-          if (!reservation.exists) {
-            await t.set(reservationRef, {
-              date: payload.date,
-              room: payload.room,
-              desk: payload.desk,
-              userName: payload.userName
-            });
-            return true;
-          } else {
-            return false;
-          }
+  const docId = reserveDeskData.date.concat(reserveDeskData.room).concat(reserveDeskData.desk);
+  const reservationRef = firestore.collection('reservationDesk').doc(docId);
+  const reserved = await reservationRef.get();
+  if (!reserved.exists) {
+    const result = await firestore.runTransaction(async t => {
+      const reservation = await t.get(reservationRef);
+      if (!reservation.exists) {
+        await t.set(reservationRef, {
+          date: reserveDeskData.date,
+          room: reserveDeskData.room,
+          desk: reserveDeskData.desk,
+          userName: userName,
         });
-        if (result) {
-          await sendSlackMessage(slackHttpHeaders, payload.responseUrl, createSuccessMessage(payload));
-        }
+        return true;
       } else {
-        await sendSlackMessage(
-          slackHttpHeaders,
-          payload.responseUrl,
-          `The desk is already reserved by @${reserved.data().userName}!`);
+        return false;
       }
     });
+    if (result) {
+      await refreshView(reserveDeskData.date);
+    }
+  } else if (reserved.get('userName') === userName) {
+    await reservationRef.delete();
+    await refreshView(reserveDeskData.date);
+  }
 };
