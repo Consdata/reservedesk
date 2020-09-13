@@ -78,8 +78,6 @@ export const createShowFreeRoomsMessage = async (firestore: admin.firestore.Fire
                                                  date: string,
                                                  triggerId: string,
                                                  viewId?: string) => {
-  console.log('3', new Date());
-  console.log('4', new Date());
   const reservationsRef = firestore.collection('reservationDesk');
   const reserved = await reservationsRef
     .where('date', '==', date)
@@ -87,7 +85,6 @@ export const createShowFreeRoomsMessage = async (firestore: admin.firestore.Fire
     .orderBy('desk')
     .get();
   const reservedDesksInRooms = new Map<string, any[]>();
-  console.log('5', new Date());
   reserved.forEach(r => {
     if (reservedDesksInRooms.get(r.data().room) == undefined) {
       reservedDesksInRooms.set(r.data().room, []);
@@ -98,6 +95,5 @@ export const createShowFreeRoomsMessage = async (firestore: admin.firestore.Fire
         user: r.data().userName
       });
   });
-  console.log('6', new Date());
   return createMessage(reservedDesksInRooms, userName, date, triggerId, viewId);
 };

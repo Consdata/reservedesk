@@ -24,20 +24,18 @@ export const reserveInteractionFactory = (
     request.headers['x-slack-request-timestamp'],
     request.rawBody.toString()
   )) {
+    console.error('Invalid slack signing');
     response.status(401).send('Invalid slack signing');
+    return;
   }
 
-  console.log('request:', request.body.payload);
   const interactionRequest: ReserveInteractionRequest = JSON.parse(request.body.payload);
   switch (interactionRequest.type) {
     case 'shortcut':
       await showMainMenu(slackHttpHeaders, interactionRequest.trigger_id);
       break;
     case 'block_actions':
-      console.log('block_actions');
-      console.log('1', new Date());
       if (interactionRequest.actions[0].action_id == 'date') {
-        console.log('selected_date:', interactionRequest.actions[0].selected_date);
         await showFreeRooms(
           slackHttpHeaders,
           firestore,
@@ -54,7 +52,6 @@ export const reserveInteractionFactory = (
           interactionRequest.trigger_id,
           interactionRequest.view.id);
       }
-      console.log('9', new Date());
       break;
   }
   response.status(200).send();
