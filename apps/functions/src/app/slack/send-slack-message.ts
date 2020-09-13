@@ -12,3 +12,24 @@ export const sendSlackMessage = async (slackHttpHeaders: { Authorization: string
     })
   });
 };
+
+export const sendModalSlackMessage = async (slackHttpHeaders: { Authorization: string; 'Content-type': string },
+                                message: string) => {
+  console.log('sendModalSlackMessage message:', message);
+  const test = await nodeFetch('https://slack.com/api/views.open', {
+    method: 'POST',
+    headers: slackHttpHeaders,
+    body: message
+  });
+  console.log('test:', test);
+};
+
+export const updateModalSlackMessage = async (slackHttpHeaders: { Authorization: string; 'Content-type': string },
+                                            message: string) => {
+  console.log('updateModalSlackMessage message:', message);
+  await nodeFetch('https://slack.com/api/views.update', {
+    method: 'POST',
+    headers: slackHttpHeaders,
+    body: message
+  });
+};

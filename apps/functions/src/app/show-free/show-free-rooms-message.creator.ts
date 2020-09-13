@@ -1,4 +1,5 @@
 import {roomsDefinitions} from './rooms-definitions';
+import * as admin from 'firebase-admin';
 
 function createMessage(reservedDesksInRooms: Map<string, any[]>, channel: string, date: string, triggerId: string, viewId: string) {
   const deskReservedBy = (roomName: string, deskName: string): string => {
@@ -46,7 +47,8 @@ function createMessage(reservedDesksInRooms: Map<string, any[]>, channel: string
               text: 'Reserve'
             },
             value: date + '_' + def.name + '_' + desk.name,
-            style: reservedBy != undefined ? 'danger' : 'primary'
+            style: reservedBy != undefined ? 'danger' : 'primary',
+            action_id: 'reserve'
           }
         }
       )
@@ -61,18 +63,23 @@ function createMessage(reservedDesksInRooms: Map<string, any[]>, channel: string
         type: 'plain_text',
         text: 'Reserve desk'
       },
+      close: {
+        type: 'plain_text',
+        text: 'Done'
+      },
       blocks: blocks
     },
     view_id: viewId
   }
 }
 
-export const createDesksViewMessage = async (firebase: typeof import('firebase-admin'),
-                                             userName: string,
-                                             date: string,
-                                             triggerId: string,
-                                             viewId?: string) => {
-  const firestore = firebase.firestore();
+export const createShowFreeRoomsMessage = async (firestore: admin.firestore.Firestore,
+                                                 userName: string,
+                                                 date: string,
+                                                 triggerId: string,
+                                                 viewId?: string) => {
+  console.log('3', new Date());
+  console.log('4', new Date());
   const reservationsRef = firestore.collection('reservationDesk');
   const reserved = await reservationsRef
     .where('date', '==', date)
@@ -80,6 +87,7 @@ export const createDesksViewMessage = async (firebase: typeof import('firebase-a
     .orderBy('desk')
     .get();
   const reservedDesksInRooms = new Map<string, any[]>();
+  console.log('5', new Date());
   reserved.forEach(r => {
     if (reservedDesksInRooms.get(r.data().room) == undefined) {
       reservedDesksInRooms.set(r.data().room, []);
@@ -90,5 +98,6 @@ export const createDesksViewMessage = async (firebase: typeof import('firebase-a
         user: r.data().userName
       });
   });
+  console.log('6', new Date());
   return createMessage(reservedDesksInRooms, userName, date, triggerId, viewId);
 };
