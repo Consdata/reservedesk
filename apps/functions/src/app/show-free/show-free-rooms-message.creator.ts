@@ -1,7 +1,7 @@
 import {roomsDefinitions} from './rooms-definitions';
 import * as admin from 'firebase-admin';
 
-function createMessage(reservedDesksInRooms: Map<string, any[]>, channel: string, date: string, triggerId: string, viewId: string) {
+function createMessage(reservedDesksInRooms: Map<string, any[]>, userName: string, date: string, triggerId: string, viewId: string) {
   const deskReservedBy = (roomName: string, deskName: string): string => {
     if (reservedDesksInRooms.get(roomName) != undefined) {
       const reservation = reservedDesksInRooms.get(roomName).filter((value) => value.desk === deskName).pop();
@@ -44,7 +44,7 @@ function createMessage(reservedDesksInRooms: Map<string, any[]>, channel: string
             text: {
               type: 'plain_text',
               emoji: false,
-              text: 'Reserve'
+              text: reservedBy === userName ? 'Cancel' : 'Reserve'
             },
             value: date + '_' + def.name + '_' + desk.name,
             style: reservedBy != undefined ? 'danger' : 'primary',

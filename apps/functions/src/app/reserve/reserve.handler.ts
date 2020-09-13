@@ -17,6 +17,16 @@ export const reserveDesk = async (slackHttpHeaders,
                                   actionValue: string,
                                   triggerId: string,
                                   viewId: string) => {
+  const refreshView = async (date: string) => {
+    const desksViewMessage = await createShowFreeRoomsMessage(
+      firestore,
+      userName,
+      date,
+      triggerId,
+      viewId);
+    await updateModalSlackMessage(slackHttpHeaders, JSON.stringify(desksViewMessage));
+  };
+
   const reserveDeskData = extractReserveDeskData(actionValue);
 
   const docId = reserveDeskData.date.concat(reserveDeskData.room).concat(reserveDeskData.desk);
@@ -38,13 +48,10 @@ export const reserveDesk = async (slackHttpHeaders,
       }
     });
     if (result) {
-      const desksViewMessage = await createShowFreeRoomsMessage(
-        firestore,
-        userName,
-        reserveDeskData.date,
-        triggerId,
-        viewId);
-      await updateModalSlackMessage(slackHttpHeaders, JSON.stringify(desksViewMessage));
+      await refreshView(reserveDeskData.date);
     }
+  } else if (reserved.get('userName') === userName) {
+    await reservationRef.delete();
+    await refreshView(reserveDeskData.date);
   }
 };
