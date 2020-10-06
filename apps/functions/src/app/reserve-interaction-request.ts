@@ -26,6 +26,14 @@ export interface ReserveInteractionRequest {
           room: {
             value: string;
           }
+        },
+        reportDates: {
+          dateFrom: {
+            selected_date: string;
+          },
+          dateTo: {
+            selected_date: string;
+          }
         }
       }
     }
