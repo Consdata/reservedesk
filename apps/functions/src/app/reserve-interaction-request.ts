@@ -8,7 +8,10 @@ export interface ReserveInteractionRequest {
   response_url: string;
   actions: [
     {
-      selected_date: string;
+      selected_date?: string;
+      selected_option?: {
+        value: string;
+      }
       value: string;
       action_id: string;
     }
