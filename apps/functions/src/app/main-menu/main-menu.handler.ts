@@ -54,7 +54,27 @@ function createMainMessage(triggerId: string) {
             }))
           }],
           block_id: 'room',
-        }]
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'plain_text',
+            text: 'or'
+          }
+        },
+        {
+          type: 'actions',
+          elements: [{
+            type: 'button',
+            text: {
+              type: 'plain_text',
+              text: 'Generate report',
+            },
+            action_id: 'report'
+          }],
+          block_id: 'report'
+        }
+      ]
     }
   }
 }

@@ -90,10 +90,6 @@ export const roomsDefinitions = [
       {
         name: 'B-4',
         dockStation: DockStation.old
-      },
-      {
-        name: 'B-5',
-        dockStation: DockStation.old
       }
     ]
   },

@@ -4,11 +4,15 @@ import {showMainMenu} from './main-menu/main-menu.handler';
 import {showFreeRooms} from './show-free/show-free-rooms.handler';
 import * as admin from 'firebase-admin';
 import {reserveDesk} from './reserve/reserve.handler';
+import {showReportMenu} from './report/report-menu.handler';
+import {ReportMessage} from './report/report-message';
+import {createReportMessage} from './report/report-message.creator';
 
 export const reserveInteractionFactory = (
   functions: import('firebase-functions').FunctionBuilder,
   config: import('firebase-functions').config.Config,
-  firestore: admin.firestore.Firestore) => functions.https.onRequest(async (request, response) => {
+  firestore: admin.firestore.Firestore,
+  pubsub: import('@google-cloud/pubsub').PubSub) => functions.https.onRequest(async (request, response) => {
 
   const slackHttpHeaders = {
     Authorization: `Bearer ${config.slack.bottoken}`,
@@ -30,6 +34,7 @@ export const reserveInteractionFactory = (
   }
 
   const interactionRequest: ReserveInteractionRequest = JSON.parse(request.body.payload);
+  let reportMessage: ReportMessage = null;
   switch (interactionRequest.type) {
     case 'shortcut':
       await showMainMenu(slackHttpHeaders, interactionRequest.trigger_id);
@@ -51,8 +56,17 @@ export const reserveInteractionFactory = (
           interactionRequest.actions[0].value,
           interactionRequest.trigger_id,
           interactionRequest.view.id);
+      } else if (interactionRequest.actions[0].action_id == 'report') {
+        await showReportMenu(slackHttpHeaders, interactionRequest.trigger_id);
       }
       break;
+    case 'view_submission':
+      reportMessage = createReportMessage(
+        interactionRequest.view.state.values.reportDates.dateFrom.selected_date,
+        interactionRequest.view.state.values.reportDates.dateTo.selected_date,
+        interactionRequest.user.username);
+      await pubsub.topic('reserve-desk-report').publish(Buffer.from(JSON.stringify(reportMessage)));
+      break;
   }
-  response.status(200).send();
+  response.status(200).send({response_action: 'clear'});
 });
