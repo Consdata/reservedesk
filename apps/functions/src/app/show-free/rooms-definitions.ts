@@ -10,16 +10,8 @@ export const roomsDefinitions = [
         dockStation: DockStation.new
       },
       {
-        name: 'B-2',
-        dockStation: DockStation.new
-      },
-      {
         name: 'B-3',
         dockStation: DockStation.new
-      },
-      {
-        name: 'B-4',
-        dockStation: DockStation.old
       },
       {
         name: 'B-5',
@@ -31,10 +23,6 @@ export const roomsDefinitions = [
     name: 'Piranie',
     wikiLink: 'https://wiki.consdata.pl/pages/viewpage.action?pageId=215392024',
     desks: [
-      {
-        name: 'B-1',
-        dockStation: DockStation.new
-      },
       {
         name: 'B-2',
         dockStation: DockStation.new
@@ -68,6 +56,10 @@ export const roomsDefinitions = [
       {
         name: 'B-4',
         dockStation: DockStation.old
+      },
+      {
+        name: 'B-5',
+        dockStation: DockStation.new
       }
     ]
   },

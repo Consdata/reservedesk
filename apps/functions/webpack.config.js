@@ -9,7 +9,8 @@ module.exports = (config, context) => {
       libraryTarget: 'commonjs'
     },
     plugins: [
-      ...config.plugins,
+      // ...config.plugins,
+/*
       new GeneratePackageJsonPlugin(
         {
           "name": "reservedesk.functions",
@@ -30,6 +31,7 @@ module.exports = (config, context) => {
         },
         __dirname + "/../../package.json"
       )
+*/
     ]
   };
 };
