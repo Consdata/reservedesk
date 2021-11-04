@@ -12,10 +12,6 @@ export const roomsDefinitions = [
       {
         name: 'B-3',
         dockStation: DockStation.new
-      },
-      {
-        name: 'B-5',
-        dockStation: DockStation.old
       }
     ]
   },
